@@ -1,0 +1,81 @@
+worker_processes  1;
+
+#error_log  logs/error.log debug;
+
+events {
+    worker_connections  1024;
+}
+
+rtmp {
+    server {
+        listen 1935;
+
+        application live {
+            live on;
+        }
+		
+		application dash {
+			live on;
+			dash on;
+			dash_path /etc/nginx/temp/dash;
+			dash_fragment 700ms;
+			dash_playlist_length 3s;
+			allow publish 125.15.57.115;
+			deny publish all;
+		}
+    }
+}
+
+http {
+	log_format yi '$remote_addr $time_local';
+	log_format hls '$remote_addr $time_local $status';
+    server {
+		server_name		v.sh1m.com;
+				
+        location / {
+			access_log /etc/nginx/logs/yi.log yi;
+            root html;
+        }
+		
+        location /stat {
+            rtmp_stat all;
+            rtmp_stat_stylesheet stat.xsl;
+        }
+
+        location /stat.xsl {
+            root html;
+        }
+		
+		location /dash {
+				include /etc/nginx/conf.d/allowlist.conf;
+				deny all;
+				access_log /etc/nginx/logs/dash.log hls;
+				types {  
+					application/vnd.apple.mpegurl mpd;  
+					audio/x-m4a m4a;
+					video/x-m4v m4v;
+				}
+				alias temp/dash;  
+				expires -1;  
+			}
+    
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/v.sh1m.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/v.sh1m.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+
+    server {
+    if ($host = v.sh1m.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+        listen      80;
+		server_name		v.sh1m.com;
+    return 404; # managed by Certbot
+
+
+}}

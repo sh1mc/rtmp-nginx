@@ -1,0 +1,18 @@
+version: "3"
+services:
+    nginx:
+        build: ./nginx
+        networks:
+            - default
+        volumes:
+            - "./config:/etc/nginx"
+        expose:
+            - "80"
+            - "1935"
+        restart: always
+        tty: true
+
+networks:
+    default:
+        external:
+            name: shared
